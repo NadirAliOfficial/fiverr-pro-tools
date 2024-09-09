@@ -16,3 +16,4 @@ A Chrome extension for Fiverr sellers — keeps your online status active, impro
 ## License
 MIT
 <!-- updated: 2025-08-13-r01 -->
+
