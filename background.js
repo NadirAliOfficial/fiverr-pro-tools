@@ -25,12 +25,22 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   chrome.alarms.clear(alarmName(tabId));
 });
 
-// Alarm fires — send KEEPER_TICK only to the specific tab it belongs to
+// Random delay between 40–75 seconds — no fixed heartbeat pattern
+function randomKeeperDelay() {
+  return 0.67 + Math.random() * 0.58; // minutes: ~40s–75s
+}
+
+function scheduleNextTick(tabId) {
+  chrome.alarms.create(alarmName(tabId), { delayInMinutes: randomKeeperDelay() });
+}
+
+// Alarm fires — send tick to the tab, then reschedule with a NEW random delay
 chrome.alarms.onAlarm.addListener((alarm) => {
   const match = alarm.name.match(/^fpt-keeper-(\d+)$/);
   if (!match) return;
   const tabId = parseInt(match[1], 10);
   chrome.tabs.sendMessage(tabId, { type: 'KEEPER_TICK' }).catch(() => {});
+  scheduleNextTick(tabId);
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -67,7 +77,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.type === 'START_KEEPER_ALARM') {
     if (!tabId) return;
-    chrome.alarms.create(alarmName(tabId), { periodInMinutes: 0.8 });
+    scheduleNextTick(tabId);
     chrome.action.setBadgeText({ text: 'ON', tabId });
     chrome.action.setBadgeBackgroundColor({ color: '#1dbf73', tabId });
     chrome.action.setTitle({ title: 'Fiverr Pro Tools — Online Keeper Active', tabId });
