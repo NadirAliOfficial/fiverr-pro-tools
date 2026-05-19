@@ -92,6 +92,8 @@ let lastNotifCount = 0;
 let lastMessageCount = 0;
 let keeperTimer = null;
 let responseTimerEl = null;
+// Random ID per session — prevents Fiverr scanning DOM for known extension element IDs
+const TIMER_EL_ID = '_fv' + Math.random().toString(36).slice(2, 9);
 
 chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (res) => {
   if (res) {
@@ -104,7 +106,10 @@ chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (res) => {
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'KEEPER_TICK' && settings.onlineKeeperEnabled) {
-    simulateActivityBurst();
+    // Only fire mouse events on visible tabs — events on hidden tabs are
+    // detectable by Fiverr (real users can't move a mouse on a tab they're not viewing).
+    // WebSocket keeps online status alive on background tabs without needing events.
+    if (!document.hidden) simulateActivityBurst();
   }
 });
 
@@ -129,7 +134,7 @@ function setKeeperBadge(isActive) {
 }
 
 function simulateActivityBurst() {
-  const events = [
+  const all = [
     () => {
       const x = 100 + Math.random() * (window.innerWidth - 200);
       const y = 100 + Math.random() * (window.innerHeight - 200);
@@ -147,8 +152,14 @@ function simulateActivityBurst() {
     }
   ];
 
-  events.forEach((fn, i) => {
-    setTimeout(fn, i * (200 + Math.random() * 400));
+  // Pick 1–3 events at random so every burst looks different
+  const count = 1 + Math.floor(Math.random() * all.length);
+  const picked = all.sort(() => Math.random() - 0.5).slice(0, count);
+
+  let delay = 0;
+  picked.forEach((fn) => {
+    delay += 150 + Math.random() * 600;
+    setTimeout(fn, delay);
   });
 }
 
@@ -231,7 +242,7 @@ function findOldestUnansweredTimestamp() {
 function injectResponseBadge(oldestTs) {
   if (!responseTimerEl) {
     responseTimerEl = document.createElement('div');
-    responseTimerEl.id = 'fpt-response-timer';
+    responseTimerEl.id = TIMER_EL_ID;
     responseTimerEl.style.cssText = `
       position: fixed;
       bottom: 20px;
