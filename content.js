@@ -133,12 +133,23 @@ function setKeeperBadge(isActive) {
   chrome.runtime.sendMessage({ type: 'KEEPER_STATUS', active: isActive });
 }
 
+// Track last known cursor position so movementX/Y look realistic
+let _lastX = Math.random() * window.innerWidth;
+let _lastY = Math.random() * window.innerHeight;
+
 function simulateActivityBurst() {
   const all = [
     () => {
       const x = 100 + Math.random() * (window.innerWidth - 200);
       const y = 100 + Math.random() * (window.innerHeight - 200);
-      const opts = { bubbles: true, cancelable: true, clientX: x, clientY: y };
+      const movX = Math.round(x - _lastX);
+      const movY = Math.round(y - _lastY);
+      _lastX = x; _lastY = y;
+      const opts = {
+        bubbles: true, cancelable: true,
+        clientX: x, clientY: y,
+        movementX: movX, movementY: movY
+      };
       document.dispatchEvent(new MouseEvent('mousemove', opts));
       document.dispatchEvent(new PointerEvent('pointermove', { ...opts, pointerId: 1 }));
     },
@@ -148,11 +159,16 @@ function simulateActivityBurst() {
     () => {
       const x = 100 + Math.random() * (window.innerWidth - 200);
       const y = 100 + Math.random() * (window.innerHeight - 200);
-      document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: x, clientY: y }));
+      const movX = Math.round(x - _lastX);
+      const movY = Math.round(y - _lastY);
+      _lastX = x; _lastY = y;
+      document.dispatchEvent(new MouseEvent('mousemove', {
+        bubbles: true, clientX: x, clientY: y,
+        movementX: movX, movementY: movY
+      }));
     }
   ];
 
-  // Pick 1–3 events at random so every burst looks different
   const count = 1 + Math.floor(Math.random() * all.length);
   const picked = all.sort(() => Math.random() - 0.5).slice(0, count);
 
@@ -239,15 +255,19 @@ function findOldestUnansweredTimestamp() {
   return oldest;
 }
 
+// Shadow DOM host — document.querySelector cannot see inside a closed shadow root.
+// Fiverr's DOM fingerprinting scripts are completely blind to this element.
+let _shadowInner = null;
+
 function injectResponseBadge(oldestTs) {
   if (!responseTimerEl) {
+    const host = document.createElement('span');
+    host.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;';
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: 'closed' });
+
     responseTimerEl = document.createElement('div');
-    responseTimerEl.id = TIMER_EL_ID;
     responseTimerEl.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 99999;
       background: #222325;
       color: #fff;
       font-family: sans-serif;
@@ -259,7 +279,8 @@ function injectResponseBadge(oldestTs) {
       line-height: 1.5;
       min-width: 190px;
     `;
-    document.body.appendChild(responseTimerEl);
+    shadow.appendChild(responseTimerEl);
+    _shadowInner = responseTimerEl;
   }
 
   if (!oldestTs) {
@@ -269,18 +290,18 @@ function injectResponseBadge(oldestTs) {
 
   const now = Date.now();
   const elapsed = now - oldestTs.getTime();
-  const remaining = 3600000 - elapsed; // 1 hour in ms
+  const remaining = 3600000 - elapsed;
 
   if (remaining <= 0) {
     responseTimerEl.style.background = '#c0392b';
     responseTimerEl.style.display = 'block';
-    responseTimerEl.innerHTML = `<strong>Response Time</strong><br>⚠️ 1-hour window passed`;
+    responseTimerEl.innerHTML = `<strong>Response Time</strong><br>&#9888;&#65039; 1-hour window passed`;
     return;
   }
 
   const mins = Math.floor(remaining / 60000);
   const secs = Math.floor((remaining % 60000) / 1000);
-  const urgent = remaining < 900000; // < 15 min
+  const urgent = remaining < 900000;
 
   responseTimerEl.style.background = urgent ? '#c0392b' : '#222325';
   responseTimerEl.style.display = 'block';
