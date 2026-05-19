@@ -1,0 +1,153 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 280px;
+  background: #1a1a1a;
+  color: #f0f0f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.logo {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.tab-label {
+  font-size: 10px;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.section {
+  padding: 8px 0;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  cursor: default;
+  transition: background 0.15s;
+}
+
+.toggle-row:hover {
+  background: #242424;
+}
+
+.info {
+  flex: 1;
+  margin-right: 12px;
+}
+
+.label {
+  font-weight: 500;
+  color: #eee;
+  margin-bottom: 2px;
+}
+
+.sub {
+  color: #888;
+  font-size: 11px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: #3a3a3a;
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+
+.slider::before {
+  content: '';
+  position: absolute;
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background: #888;
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+
+input:checked + .slider {
+  background: #1dbf73;
+}
+
+input:checked + .slider::before {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #444;
+  margin-left: 5px;
+  vertical-align: middle;
+  transition: background 0.3s;
+}
+
+.dot.active {
+  background: #1dbf73;
+  box-shadow: 0 0 5px #1dbf73;
+}
+
+.dot.paused {
+  background: #888;
+}
+
+.footer {
+  text-align: center;
+  color: #555;
+  font-size: 11px;
+  padding: 10px 0 12px;
+  border-top: 1px solid #2a2a2a;
+}

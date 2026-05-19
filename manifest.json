@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Fiverr Pro Tools",
+  "version": "1.0.0",
+  "description": "Stealth refresh, online status keeper, notifications, and response time tracker for Fiverr sellers.",
+  "permissions": [
+    "notifications",
+    "storage",
+    "alarms",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.fiverr.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.fiverr.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Fiverr Pro Tools"
+  }
+}
