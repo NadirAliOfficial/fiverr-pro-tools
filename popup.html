@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fiverr Pro Tools</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
@@ -16,42 +15,19 @@
   </div>
 
   <div class="section">
-    <div class="toggle-row" id="row-keeper">
+    <div class="toggle-row">
       <div class="info">
         <div class="label">Online Status Keeper <span id="keeper-dot" class="dot"></span></div>
-        <div class="sub" id="keeper-sub">Simulates activity to stay "online"</div>
+        <div class="sub" id="keeper-sub">Keeps your green dot active</div>
       </div>
       <label class="switch">
         <input type="checkbox" id="toggle-keeper" />
         <span class="slider"></span>
       </label>
     </div>
-
-    <div class="toggle-row" id="row-notif">
-      <div class="info">
-        <div class="label">Desktop Notifications</div>
-        <div class="sub">Alerts for new messages & orders</div>
-      </div>
-      <label class="switch">
-        <input type="checkbox" id="toggle-notif" />
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <div class="toggle-row" id="row-response">
-      <div class="info">
-        <div class="label">Response Time Tracker</div>
-        <div class="sub">Countdown on inbox (1-hour window)</div>
-      </div>
-      <label class="switch">
-        <input type="checkbox" id="toggle-response" />
-        <span class="slider"></span>
-      </label>
-    </div>
   </div>
 
   <div class="footer">Only active on fiverr.com</div>
-
   <script src="popup.js"></script>
 </body>
 </html>

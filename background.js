@@ -1,40 +1,25 @@
-const DEFAULT_SETTINGS = {
-  onlineKeeperEnabled: true,
-  notificationsEnabled: true,
-  responseTrackerEnabled: true,
-  lastNotifCount: 0,
-  lastMessageCount: 0
-};
+const DEFAULT_SETTINGS = { onlineKeeperEnabled: true };
 
-// Per-tab keeper alarm names: fpt-keeper-{tabId}
-function alarmName(tabId) {
-  return `fpt-keeper-${tabId}`;
-}
+function alarmName(tabId) { return `fpt-keeper-${tabId}`; }
+function tabKey(tabId) { return `tab_${tabId}`; }
 
-function tabKey(tabId) {
-  return `tab_${tabId}`;
-}
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.set({ defaults: DEFAULT_SETTINGS });
-});
-
-// Clean up settings when a tab is closed
-chrome.tabs.onRemoved.addListener((tabId) => {
-  chrome.storage.local.remove(tabKey(tabId));
-  chrome.alarms.clear(alarmName(tabId));
-});
-
-// Random delay between 40–75 seconds — no fixed heartbeat pattern
 function randomKeeperDelay() {
-  return 0.67 + Math.random() * 0.58; // minutes: ~40s–75s
+  return 0.67 + Math.random() * 0.58; // 40–75 seconds
 }
 
 function scheduleNextTick(tabId) {
   chrome.alarms.create(alarmName(tabId), { delayInMinutes: randomKeeperDelay() });
 }
 
-// Alarm fires — send tick to the tab, then reschedule with a NEW random delay
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.set({ defaults: DEFAULT_SETTINGS });
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  chrome.storage.local.remove(tabKey(tabId));
+  chrome.alarms.clear(alarmName(tabId));
+});
+
 chrome.alarms.onAlarm.addListener((alarm) => {
   const match = alarm.name.match(/^fpt-keeper-(\d+)$/);
   if (!match) return;
@@ -56,23 +41,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
-  if (msg.type === 'SET_SETTING') {
-    if (!tabId) return;
-    const key = tabKey(tabId);
+  if (msg.type === 'SET_TAB_SETTING') {
+    const tid = msg.tabId;
+    const key = tabKey(tid);
     chrome.storage.local.get(key, (data) => {
       const current = data[key] || {};
       chrome.storage.local.set({ [key]: { ...current, [msg.key]: msg.value } });
     });
   }
 
-  if (msg.type === 'NOTIFY') {
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icons/icon128.png',
-      title: msg.title,
-      message: msg.body,
-      priority: 2
+  if (msg.type === 'GET_TAB_SETTINGS') {
+    const tid = msg.tabId;
+    chrome.storage.local.get([tabKey(tid), 'defaults'], (data) => {
+      const base = data.defaults || DEFAULT_SETTINGS;
+      const tabSettings = data[tabKey(tid)] || {};
+      sendResponse({ ...base, ...tabSettings });
     });
+    return true;
   }
 
   if (msg.type === 'START_KEEPER_ALARM') {
@@ -100,26 +85,5 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       chrome.action.setBadgeText({ text: '', tabId });
       chrome.action.setTitle({ title: 'Fiverr Pro Tools — Keeper Off', tabId });
     }
-  }
-
-  // Popup requests settings for a specific tab by ID
-  if (msg.type === 'GET_TAB_SETTINGS') {
-    const tid = msg.tabId;
-    chrome.storage.local.get([tabKey(tid), 'defaults'], (data) => {
-      const base = data.defaults || DEFAULT_SETTINGS;
-      const tabSettings = data[tabKey(tid)] || {};
-      sendResponse({ ...base, ...tabSettings });
-    });
-    return true;
-  }
-
-  // Popup updates a setting for a specific tab by ID
-  if (msg.type === 'SET_TAB_SETTING') {
-    const tid = msg.tabId;
-    const key = tabKey(tid);
-    chrome.storage.local.get(key, (data) => {
-      const current = data[key] || {};
-      chrome.storage.local.set({ [key]: { ...current, [msg.key]: msg.value } });
-    });
   }
 });
