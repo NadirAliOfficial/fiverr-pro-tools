@@ -33,14 +33,17 @@ chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (res) => {
   if (settings.onlineKeeperEnabled) startOnlineKeeper();
 });
 
+function isUserTyping() {
+  const el = document.activeElement;
+  if (!el) return false;
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable || el.getAttribute('contenteditable') === 'true' || el.getAttribute('role') === 'textbox';
+}
+
 // Receive tick from background alarm
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'KEEPER_TICK' && settings.onlineKeeperEnabled) {
-    // Skip if tab is hidden — events on hidden tabs are detectable
     if (document.hidden) return;
-    // Skip if user is actively typing — prevents input conflicts
-    const el = document.activeElement;
-    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+    if (isUserTyping()) return;
     simulateActivityBurst();
   }
 
@@ -67,8 +70,10 @@ function setKeeperBadge(isActive) {
 }
 
 function simulateActivityBurst() {
-  const all = [
+  const moves = [
     () => {
+      // Re-check right before dispatching — user may have clicked into input during delay
+      if (isUserTyping()) return;
       const x = 100 + Math.random() * (window.innerWidth - 200);
       const y = 100 + Math.random() * (window.innerHeight - 200);
       const movX = Math.round(x - _lastX);
@@ -79,9 +84,7 @@ function simulateActivityBurst() {
       document.dispatchEvent(new PointerEvent('pointermove', { ...opts, pointerId: 1 }));
     },
     () => {
-      window.dispatchEvent(new Event('scroll'));
-    },
-    () => {
+      if (isUserTyping()) return;
       const x = 100 + Math.random() * (window.innerWidth - 200);
       const y = 100 + Math.random() * (window.innerHeight - 200);
       const movX = Math.round(x - _lastX);
@@ -91,12 +94,12 @@ function simulateActivityBurst() {
     }
   ];
 
-  const count = 1 + Math.floor(Math.random() * all.length);
-  const picked = all.sort(() => Math.random() - 0.5).slice(0, count);
+  // scroll removed — it closes Fiverr dropdowns and autocomplete regardless of focus state
 
+  const picked = moves.sort(() => Math.random() - 0.5).slice(0, 1 + Math.floor(Math.random() * moves.length));
   let delay = 0;
   picked.forEach((fn) => {
-    delay += 150 + Math.random() * 600;
+    delay += 200 + Math.random() * 600;
     setTimeout(fn, delay);
   });
 }
